@@ -1,7 +1,6 @@
 .scrapy/*
 __pycache__/*
 *.pyc
-*.csv
 spiders/__pycache__/*
 build/*
 project.egg-info/*

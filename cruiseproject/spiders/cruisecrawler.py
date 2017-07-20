@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import scrapy
 import json
-from scrapy.shell import inspect_response
 
 
 class CruiseSpider(scrapy.Spider):
@@ -40,10 +39,10 @@ class CruiseSpider(scrapy.Spider):
             cruise_name = item["displayName"]
             duration = item["durationText"]
             data = json.dumps(payload)
-            yield scrapy.Request(url, method="POST", body=data, callback=self.parse_price,
+            yield scrapy.Request(url, method="POST", body=data, callback=self.parse_id,
                                  meta={'cruise_name': cruise_name, 'duration': duration, 'link': link})
 
-    def parse_price(self, response):
+    def parse_id(self, response):
         json_res = json.loads(response.body)
         quote_id = json_res["quoteId"]
         url = 'https://shadowprodapi.hurtigruten.com/api/quotes/{}/packagePrices?date={}&voyageId={}'
@@ -58,18 +57,14 @@ class CruiseSpider(scrapy.Spider):
         meta = response.meta
         json_res = json.loads(response.body)
         item = dict()
-        try:
-            item['cruise_name'] = meta['cruise_name']
-            item['link_to_cruise'] = meta['link']
-            item['duration'] = meta['duration']
-            item['date'] = json_res['date'].split('T')[0]
-            item['code'] = json_res['packageCode']
-            item['cabins_prices'] = []
-            for i in json_res['categoryPrices']:
-                d = {'name': i['localizedName']}
-                d['price'] = i['price']['localizedPrice'].replace("\xa0", "")
-                item['cabins_prices'].append(d)
-            yield item
-        except Exception as e:
-            print('Got a {}'.format(e))
-            inspect_response(response, self)
+        item['cruise_name'] = meta['cruise_name']
+        item['link_to_cruise'] = meta['link']
+        item['duration'] = meta['duration']
+        item['date'] = json_res['date'].split('T')[0]
+        item['code'] = json_res['packageCode']
+        item['cabins_prices'] = []
+        for i in json_res['categoryPrices']:
+            d = {'name': i['localizedName']}
+            d['price'] = i['price']['localizedPrice'].replace("\xa0", "")
+            item['cabins_prices'].append(d)
+        yield item
