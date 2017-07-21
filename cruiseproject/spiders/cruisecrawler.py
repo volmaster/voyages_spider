@@ -12,25 +12,26 @@ class CruiseSpider(scrapy.Spider):
         json_response = json.loads(response.body)
         for link in json_response['voyages']:
             full_link = response.urljoin(link['voyageUrl'])
-            yield scrapy.Request(full_link, callback=self.parse_codes)
+            yield scrapy.Request(full_link, callback=self.parse_single_page)
 
-    def parse_codes(self, response):
+    def parse_single_page(self, response):
         sold_out = response.xpath('//div[@class="top-image-promotion"]').extract_first()
         if sold_out is not None:
             print('This cruise is SOLD OUT! {}'.format(response.url))
         codes = response.xpath(
             '//script[contains(.,"packageCodes")]').re_first(r'"packageCodes": \[(.*)\],')
         url = "https://shadowprodapi.hurtigruten.com/api//travelsuggestions/gateways"
-        payload = {"travelSuggestionCodes": None, "marketCode": "UK", "languageCode": "en"}
-        payload["travelSuggestionCodes"] = codes.replace('"', '').split(',')
+        payload = {"travelSuggestionCodes": codes.replace('"', '').split(','), "marketCode": "UK", "languageCode": "en"}
         data = json.dumps(payload)
-        yield scrapy.Request(url, method="POST", body=data, callback=self.parse_grouped, meta={'link': response.url})
+        yield scrapy.Request(url, method="POST", body=data, callback=self.parse_dates, meta={'link': response.url})
 
-    def parse_grouped(self, response):
+    def parse_dates(self, response):
         link = response.meta['link']
         json_res = json.loads(response.body)
-        payload = {"packageCode": None, "searchFromDateTime": None, "cabins": [{"passengers": [{"ageCategory": "ADULT", "guestType": "REGULAR"}, {
-            "ageCategory": "ADULT", "guestType": "REGULAR"}]}], "currencyCode": "EUR", "marketCode": "UK", "languageCode": "en", "quoteId": None, "bookingSourceCode": "TDL_B2C_ROW_EURO"}
+        payload = {"packageCode": None, "searchFromDateTime": None,
+                   "cabins": [{"passengers": [{"ageCategory": "ADULT", "guestType": "REGULAR"}, {
+                       "ageCategory": "ADULT", "guestType": "REGULAR"}]}], "currencyCode": "EUR", "marketCode": "UK",
+                   "languageCode": "en", "quoteId": None, "bookingSourceCode": "TDL_B2C_ROW_EURO"}
         url = 'https://shadowprodapi.hurtigruten.com/api/availability/travelsuggestions/grouped'
         for item in json_res["gateways"]:
             date = item["firstAvailableDate"].split('T')[0]
@@ -64,7 +65,6 @@ class CruiseSpider(scrapy.Spider):
         item['code'] = json_res['packageCode']
         item['cabins_prices'] = []
         for i in json_res['categoryPrices']:
-            d = {'name': i['localizedName']}
-            d['price'] = i['price']['localizedPrice'].replace("\xa0", "")
+            d = {'name': i['localizedName'], 'price': i['price']['localizedPrice'].replace("\xa0", "")}
             item['cabins_prices'].append(d)
         yield item
