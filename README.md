@@ -6,3 +6,6 @@ The site heavy use of a JavaScript and on the [single voyages page]
 in order to obtain desired info we need to click on the button "Check availability" and after that click on the button 
 "Select date" and wait some time (site uses a complicated Ajax calls behind the scenes).
 With help of this spider, we can simulate those JavaScripts requests and quickly parse all returning info.
+
+The short demo of spider work:
+https://youtu.be/Z1y85PeRMJc
