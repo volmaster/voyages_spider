@@ -23,7 +23,7 @@ class CruiseSpider(scrapy.Spider):
         """
         sold_out = response.xpath('//div[@class="top-image-promotion"]').extract_first()
         if sold_out is not None:
-            print('This cruise is SOLD OUT! {}'.format(response.url))
+            self.logger.info('This cruise is SOLD OUT! {}'.format(response.url))
         codes_string = response.xpath('//script[contains(.,"packageCodes")]/text()').extract_first()
         codes_dict = json.loads(codes_string.replace("var __PAGECONTENT = ", ""))
         codes = codes_dict['tourPackageDetails']['packageCodes']
@@ -33,7 +33,7 @@ class CruiseSpider(scrapy.Spider):
             data = json.dumps(payload)
             yield scrapy.Request(url, method="POST", body=data, callback=self.parse_dates, meta={'link': response.url})
         else:
-            print('Page don\'t have codes!')
+            self.logger.info('Page don\'t have codes!')
 
     def parse_dates(self, response):
         """We extract available departure dates from the response and simulate JavaScript Ajax call
@@ -81,7 +81,7 @@ class CruiseSpider(scrapy.Spider):
         """
         meta = response.meta
         json_res = json.loads(response.body)
-        item = dict()
+        item = {}
         item['cruise_name'] = meta['cruise_name']
         item['code'] = json_res['packageCode']
         item['ship'] = meta['ship']
